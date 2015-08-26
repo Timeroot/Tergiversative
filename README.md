@@ -1,0 +1,2 @@
+# Tergiversative
+Experimental SAT solver
