@@ -87,7 +87,6 @@ int main(int argc, char ** argv) {
 	}
 
 	Solver* s = new DPSolver();
-	std::vector<VarAssignment> solution;
 
 	std::unordered_set<Clause,ClauseHash> problem(clList.begin(), clList.end());
 
@@ -98,8 +97,8 @@ int main(int argc, char ** argv) {
 //	}
 //	}
 
-	if( s->solve(problem, solution) == RESULT_SAT ){
-		printSolution("Final sol",solution);
+	if( s->solve(problem) == RESULT_SAT ){
+		printSolution("Final sol",s->getSolution());
 	} else {
 		printf("No solution!\n");
 	}

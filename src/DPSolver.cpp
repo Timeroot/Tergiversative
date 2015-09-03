@@ -6,13 +6,10 @@
  */
 
 #include "DPSolver.h"
-#include <stack>
-#include <unordered_set>
-#include <unordered_map>
-#include <bitset>
-#include <iostream>
-#include <string>
-#include <vector>
+#include <cstdio>
+
+//typedef std::unordered_set<Clause,ClauseHash> clauseSet;
+//typedef std::vector<VarAssignment> assignmentSet;
 
 DPSolver::DPSolver() {
 }
@@ -20,23 +17,15 @@ DPSolver::DPSolver() {
 DPSolver::~DPSolver() {
 }
 
-static VarAssignment chooseVar( std::unordered_set<Clause,ClauseHash> unsatClauses ){
+VarAssignment DPSolver::chooseVar(){
 	//TODO: Currently makes the (pretty uneducated) choice of whatever happens to be the first variable in the first clause.
 	return ((*unsatClauses.begin()).a);
 }
 
-//For unitPropagate. Contains all the variables yet to be propagated.
-static std::deque<Clause> toPropagate = std::deque<Clause>();
-
-static int clauseChecks = 0;
-
-//Unit propagation. Returns false if it finds a contradiction.
-static bool unitPropagate(
-		std::unordered_set<Clause,ClauseHash>& oldClauses,
-		std::unordered_set<Clause,ClauseHash>& newClauses,
-		std::unordered_set<Clause,ClauseHash>& unsatClauses,
+bool DPSolver::unitPropagate(
+		clauseSet& oldClauses,
+		clauseSet& newClauses,
 		VarAssignment newAss,
-		std::vector<VarAssignment>& solution,
 		int& newAsses
 		){
 
@@ -117,12 +106,10 @@ static bool unitPropagate(
 }
 
 //Undoes a previous assignment
-static void revert(
-		std::unordered_set<Clause,ClauseHash>& oldClauses,
-		std::unordered_set<Clause,ClauseHash>& newClauses,
-		std::unordered_set<Clause,ClauseHash>& unsatClauses,
-		std::vector<VarAssignment>& solution,
-		int& newAsses
+void DPSolver::revert(
+		clauseSet& oldClauses,
+		clauseSet& newClauses,
+		int newAsses
 		){
 
 	//Add old ones back in
@@ -138,50 +125,57 @@ static void revert(
 	solution.resize(solution.size()-newAsses);
 }
 
-int DPSolver::solve(std::unordered_set<Clause,ClauseHash>& clauses, std::vector<VarAssignment>& solution) {
 
-//	std::stack<VarAssignment> decisions;
+int DPSolver::solve(clauseSet& clauses) {
+	unsatClauses = clauses;
+	return solve_level();
+}
+
+int DPSolver::solve_level() {
+
 	std::unordered_set<Clause,ClauseHash> oldClauses;
 	std::unordered_set<Clause,ClauseHash> newClauses;
 
-	VarAssignment newAss = chooseVar(clauses);
+	VarAssignment newAss = chooseVar();
 	choices++;
-//	decisions.push(newAss);
 
 	int newAsses;
 
 	if(solution.size()<20){
-		printf("Assuming %d (depth %i)\n",newAss.val,solution.size());
+		printf("Assuming %d (depth %i)\n",newAss.val,(int)solution.size());
 		fflush(stdout);
 	}
 
-	if(unitPropagate(oldClauses, newClauses, clauses, newAss, solution, newAsses)){
-		if(clauses.size()==0)
+	if(unitPropagate(oldClauses, newClauses, newAss, newAsses)){
+		if(unsatClauses.size()==0)
 			return RESULT_SAT;
-		if(solve(clauses, solution) == RESULT_SAT)
+		if(solve_level() == RESULT_SAT)
 			return RESULT_SAT;
 	}
-	revert(oldClauses, newClauses, clauses, solution, newAsses);
+	revert(oldClauses, newClauses, newAsses);
 	reversions++;
 
-//	decisions.pop();
 	newAss.val = -newAss.val; //Try with it the other way!
 
 	if(solution.size()<20){
-		printf("Instead Assuming %d (depth %i)\n",newAss.val,solution.size());
+		printf("Instead Assuming %d (depth %i)\n",newAss.val,(int)solution.size());
 		fflush(stdout);
 	}
 
-	if(unitPropagate(oldClauses, newClauses, clauses, newAss, solution, newAsses)){
-		if(clauses.size()==0)
+	if(unitPropagate(oldClauses, newClauses, newAss, newAsses)){
+		if(unsatClauses.size()==0)
 			return RESULT_SAT;
-		if(solve(clauses, solution) == RESULT_SAT)
+		if(solve_level() == RESULT_SAT)
 			return RESULT_SAT;
 	}
-	revert(oldClauses, newClauses, clauses, solution, newAsses);
+	revert(oldClauses, newClauses, newAsses);
 	reversions++;
 
 	return RESULT_UNSAT;
+}
+
+assignmentSet& DPSolver::getSolution(){
+	return solution;
 }
 
 void DPSolver::printPerformance() {

@@ -16,9 +16,13 @@
 #include <unordered_set>
 #include <vector>
 
+typedef std::unordered_set<Clause,ClauseHash> clauseSet;
+typedef std::vector<VarAssignment> assignmentSet;
+
 class Solver {
 public:
-	virtual int solve(std::unordered_set<Clause,ClauseHash>& clauses, std::vector<VarAssignment>& solution ) = 0;
+	virtual int solve(clauseSet& clauses) = 0;
+	virtual assignmentSet& getSolution() = 0;
 	virtual void printPerformance() = 0;
 };
 
